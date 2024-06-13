@@ -122,30 +122,14 @@ The last step is to write the function for the system call! We haven’t really 
 You can implement system calls anywhere, but miscellaneous syscalls tend to go in the kernel/sys.c file. Put this somewhere in the file:
 
 ```c
-SYSCALL_DEFINE1(my_syscall, char *, msg) {
-    char buf[256];
-    long copied;
-
-    // Inline assembly to simulate strncpy_from_user
-    asm volatile(
-        "1: movb (%1), %%al\n"      // Copy the character from 'msg' to 'al'
-        "   movb %%al, (%2)\n"      // Copy 'al' to 'buf'
-        "   add $1, %1\n"           // Increment the 'msg' pointer
-        "   add $1, %2\n"           // Increment the 'buf' pointer
-        "   dec %0\n"               // Decrement 'copied'
-        "   testb %%al, %%al\n"     // Test if 'al' (the copied character) is null
-        "   jne 1b\n"               // Loop if the character is not null
-        : "=r" (copied), "=r" (msg), "=r" (buf)  // Output list
-        : "0" (sizeof(buf)-1), "1" (msg), "2" (buf) // Input list
-        : "al", "memory"            // Clobber list
-    );
-
-    buf[sizeof(buf)-1] = '\0'; // Ensure the string is terminated
-
-    // Use printk to display the message - this cannot be done in assembly
-    printk(KERN_INFO "my_syscall syscall called with \"%s\"\n", buf);
-
-    return 0;
+SYSCALL_DEFINE1(stephen, char *, msg)
+{
+  char buf[256];
+  long copied = strncpy_from_user(buf, msg, sizeof(buf));
+  if (copied < 0 || copied == sizeof(buf))
+    return -EFAULT;
+  printk(KERN_INFO "stephen syscall called with \"%s\"\n", buf);
+  return 0;
 }
 ```
 
