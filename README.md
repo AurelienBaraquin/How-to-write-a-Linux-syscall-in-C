@@ -1,1 +1,0 @@
-# How-to-write-a-Linux-syscall-in-C
